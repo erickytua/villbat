@@ -2,9 +2,13 @@
 require 'includes/db.php';
 include 'includes/header.php';
 
-// Ambil data dari tabel villas
-$query = "SELECT * FROM villas ORDER BY id DESC";
+$query = "SELECT * FROM villas ORDER BY display_order ASC, id DESC";
 $result = mysqli_query($conn, $query);
+if ($result === false) {
+    // Jika server MySQL versi lama atau kolom belum ada, fallback ke ordering by id
+    $query = "SELECT * FROM villas ORDER BY id DESC";
+    $result = mysqli_query($conn, $query);
+}
 ?>
 
 <header id="home" class="hero">

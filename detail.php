@@ -1,6 +1,5 @@
 <?php
 require 'includes/db.php';
-include 'includes/header.php';
 
 $id = intval($_GET['id'] ?? 0);
 if (!$id) { header("Location: index.php"); exit; }
@@ -17,6 +16,14 @@ while($row = mysqli_fetch_assoc($galleryQ)) {
 
 // Tambahkan foto utama ke urutan pertama array
 array_unshift($galleryImages, $villa['image']);
+
+// Prepare SEO meta for header
+$meta_title = $villa['name'] . ' - Villa di ' . $villa['location'];
+$meta_description = substr(strip_tags($villa['description']), 0, 160);
+$meta_keywords = implode(', ', array_map('trim', explode(',', $villa['facilities'])));
+$canonical = ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+
+include 'includes/header.php';
 ?>
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
@@ -39,15 +46,17 @@ array_unshift($galleryImages, $villa['image']);
 
     <div class="gallery-section" style="margin-bottom: 3rem;">
         <div class="swiper mySwiper">
-            <div class="swiper-wrapper">
-                <?php foreach($galleryImages as $img): 
-                    $src = (strpos($img, 'http') !== false) ? $img : 'assets/uploads/' . $img;
-                ?>
-                <div class="swiper-slide">
-                    <img src="<?php echo $src; ?>" alt="Villa Image">
+                <div class="swiper-wrapper">
+                    <?php foreach($galleryImages as $img): 
+                        $src = (strpos($img, 'http') !== false) ? $img : 'assets/uploads/' . $img;
+                    ?>
+                    <div class="swiper-slide">
+                        <div class="swiper-zoom-container">
+                            <img src="<?php echo $src; ?>" alt="<?php echo htmlspecialchars($villa['name']); ?>">
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
                 </div>
-                <?php endforeach; ?>
-            </div>
             <div class="swiper-button-next"></div>
             <div class="swiper-button-prev"></div>
             <div class="swiper-pagination"></div>
@@ -64,12 +73,35 @@ array_unshift($galleryImages, $villa['image']);
             <section class="facilities-section">
                 <h2>Fasilitas</h2>
                 <div class="facilities-grid">
-                    <?php 
-                    $facilities = explode(',', $villa['facilities']);
-                    foreach($facilities as $f): 
+                    <?php
+                    $iconMap = [
+                        'private_pool'=>'ri-water-flash-line','living_room'=>'ri-home-2-line','karaoke'=>'ri-mic-line',
+                        'wifi'=>'ri-wifi-line','balcony'=>'ri-building-4-line','kitchen'=>'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width:20px;height:20px;color:currentColor;" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 3v6a2 2 0 0 0 2 2h1v6" stroke-linecap="round" stroke-linejoin="round"></path><path d="M9 13V3" stroke-linecap="round" stroke-linejoin="round"></path><path d="M14 7v6a2 2 0 0 0 2 2h1v4" stroke-linecap="round" stroke-linejoin="round"></path><path d="M14 3v4" stroke-linecap="round" stroke-linejoin="round"></path></svg>','bbq'=>'ri-fire-line',
+                        'mini_cafe'=>'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width:20px;height:20px;color:currentColor;" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 8h14v6a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3V8z" stroke-linecap="round" stroke-linejoin="round"></path><path d="M7 4v4" stroke-linecap="round" stroke-linejoin="round"></path><path d="M20 8v2" stroke-linecap="round" stroke-linejoin="round"></path></svg>','jacuzzi'=>'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width:20px;height:20px;color:currentColor;" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2C8 6 6 8.5 6 11a6 6 0 0 0 12 0c0-2.5-2-5-6-9z" stroke-linecap="round" stroke-linejoin="round"></path><path d="M8 18c1.5-1 3-1 5 0" stroke-linecap="round" stroke-linejoin="round"></path></svg>','garage'=>'ri-car-line','rooftop_3'=>'ri-building-line',
+                        'billiard'=>'ri-gamepad-line','rooftop_view'=>'ri-landscape-line','capacity_8_10'=>'ri-group-line','bedroom'=>'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width:20px;height:20px;color:currentColor;" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="18" height="10" rx="2" stroke-linecap="round" stroke-linejoin="round"></rect><path d="M7 7v-2a1 1 0 0 1 1-1h2" stroke-linecap="round" stroke-linejoin="round"></path><path d="M7 12h10" stroke-linecap="round" stroke-linejoin="round"></path></svg>','bathroom'=>'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width:20px;height:20px;color:currentColor;" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2a4 4 0 0 1 4 4v3" stroke-linecap="round" stroke-linejoin="round"></path><path d="M8 21v-6a4 4 0 0 1 8 0v6" stroke-linecap="round" stroke-linejoin="round"></path></svg>'
+                    ];
+
+                    if (!empty($villa['facilities_json'])) {
+                        $fac = json_decode($villa['facilities_json'], true);
+                        if (is_array($fac)){
+                            foreach($fac as $f){
+                                $k = isset($f['key']) ? $f['key'] : null;
+                                $lbl = isset($f['label']) ? $f['label'] : '';
+                                $ic = ($k && isset($iconMap[$k])) ? $iconMap[$k] : 'ri-checkbox-circle-line';
+                                if (strpos(trim($ic), '<svg') === 0) {
+                                    echo '<div class="facility-item">' . $ic . ' ' . htmlspecialchars($lbl) . '</div>';
+                                } else {
+                                    echo '<div class="facility-item"><i class="'.$ic.'"></i> '.htmlspecialchars($lbl).'</div>';
+                                }
+                            }
+                        }
+                    } else {
+                        $facilities = explode(',', $villa['facilities']);
+                        foreach($facilities as $f){
+                            echo '<div class="facility-item"><i class="ri-checkbox-circle-line"></i> '.htmlspecialchars(trim($f)).'</div>';
+                        }
+                    }
                     ?>
-                        <div class="facility-item"><i class="ri-checkbox-circle-line"></i> <?php echo trim($f); ?></div>
-                    <?php endforeach; ?>
                 </div>
             </section>
         </div>
@@ -88,6 +120,15 @@ array_unshift($galleryImages, $villa['image']);
     </div>
 </main>
 
+<!-- Mobile sticky booking bar -->
+<div class="mobile-booking-bar">
+    <div class="price-info">
+        <div class="price">Rp <?php echo number_format($villa['price']); ?></div>
+        <div class="label">/malam</div>
+    </div>
+    <a href="https://wa.me/6281234567890?text=Saya%20mau%20pesan%20<?php echo urlencode($villa['name']); ?>" class="btn-book-mobile">Pesan</a>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 <script>
     var swiper = new Swiper(".mySwiper", {
@@ -101,10 +142,19 @@ array_unshift($galleryImages, $villa['image']);
             el: ".swiper-pagination",
             clickable: true,
         },
+        zoom: {
+            maxRatio: 3,
+            toggle: true,
+        },
         autoplay: {
             delay: 3000,
             disableOnInteraction: false,
         },
+    });
+
+    // Make slides tappable to allow user to control slide vs zoom
+    document.querySelectorAll('.swiper-slide .swiper-zoom-container img').forEach(function(img){
+        img.style.cursor = 'zoom-in';
     });
 </script>
 

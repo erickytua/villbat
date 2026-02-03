@@ -8,10 +8,18 @@ if (!isset($_SESSION['admin_logged_in'])) {
 
 require '../includes/db.php';
 include '../includes/header.php';
-
-// Ambil semua data villa urut dari yang terbaru
-$query = "SELECT * FROM villas ORDER BY id DESC";
+$query = "SELECT * FROM villas ORDER BY display_order ASC, id DESC";
 $result = mysqli_query($conn, $query);
+if ($result === false) {
+    // Jika kolom display_order belum ada atau query gagal, coba fallback
+    $query = "SELECT * FROM villas ORDER BY id DESC";
+    $result = mysqli_query($conn, $query);
+}
+if ($result === false) {
+    // Jika masih gagal, buat result kosong dan simpan pesan error untuk ditampilkan
+    $result = mysqli_query($conn, "SELECT NULL AS id WHERE 1=0");
+    $admin_query_error = mysqli_error($conn);
+}
 ?>
 
 <div class="container admin-container">
@@ -25,6 +33,9 @@ $result = mysqli_query($conn, $query);
 
     <?php if(isset($_GET['status']) && $_GET['status'] == 'success'): ?>
         <div class="alert">Data berhasil disimpan!</div>
+    <?php endif; ?>
+    <?php if(isset($admin_query_error)): ?>
+        <div class="alert" style="background:#fee2e2; color:#991b1b; border-color:#fca5a5;">Kesalahan query DB: <?php echo htmlspecialchars($admin_query_error); ?></div>
     <?php endif; ?>
 
     <div style="overflow-x: auto; background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
@@ -60,7 +71,22 @@ $result = mysqli_query($conn, $query);
                                <i class="ri-image-edit-line"></i> Galeri
                             </a>
                             
-                            <a href="process.php?action=delete&id=<?php echo $villa['id']; ?>" 
+                                     <a href="edit.php?id=<?php echo $villa['id']; ?>" 
+                                         style="background: #0ea5e9; color: white; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; text-decoration: none; display: inline-block; margin-right:5px;">
+                                         <i class="ri-edit-line"></i> Edit
+                                     </a>
+
+                                     <a href="process.php?action=move_up&id=<?php echo $villa['id']; ?>" 
+                                         style="background: #94a3b8; color: white; padding: 6px 10px; border-radius: 6px; font-size: 0.85rem; text-decoration: none; display: inline-block; margin-right:5px;">
+                                         <i class="ri-arrow-up-line"></i>
+                                     </a>
+
+                                     <a href="process.php?action=move_down&id=<?php echo $villa['id']; ?>" 
+                                         style="background: #94a3b8; color: white; padding: 6px 10px; border-radius: 6px; font-size: 0.85rem; text-decoration: none; display: inline-block; margin-right:5px;">
+                                         <i class="ri-arrow-down-line"></i>
+                                     </a>
+
+                                     <a href="process.php?action=delete&id=<?php echo $villa['id']; ?>" 
                                class="btn-danger" 
                                onclick="return confirm('Yakin hapus? Semua foto galeri villa ini juga akan terhapus permanen.');"
                                style="background: #EF4444; color: white; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; text-decoration: none; display: inline-block;">

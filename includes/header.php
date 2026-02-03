@@ -7,7 +7,16 @@ $path_level = (basename(dirname($_SERVER['PHP_SELF'])) == 'admin') ? '../' : '';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VillaBatu Exclusive</title>
+    <?php
+    // SEO-friendly meta defaults. Pages can set $meta_title, $meta_description, $meta_keywords before including header.php
+    $meta_title = isset($meta_title) ? $meta_title : 'VillaBatu Exclusive - Villa & Penginapan di Kota Batu';
+    $meta_description = isset($meta_description) ? $meta_description : 'Temukan villa terbaik, cepat dan mudah. Booking via WhatsApp, foto lengkap, dan informasi fasilitas.';
+    $meta_keywords = isset($meta_keywords) ? $meta_keywords : 'villa, batu, penginapan, sewa villa, liburan';
+    ?>
+    <title><?php echo htmlspecialchars($meta_title); ?></title>
+    <meta name="description" content="<?php echo htmlspecialchars($meta_description); ?>">
+    <meta name="keywords" content="<?php echo htmlspecialchars($meta_keywords); ?>">
+    <link rel="canonical" href="<?php echo (isset($canonical) ? $canonical : ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI']); ?>">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <link rel="stylesheet" href="<?php echo $path_level; ?>assets/css/style.css">
@@ -42,3 +51,21 @@ $path_level = (basename(dirname($_SERVER['PHP_SELF'])) == 'admin') ? '../' : '';
         <div class="menu-toggle"><i class="ri-menu-4-line"></i></div>
     </div>
 </nav>
+
+<script>
+// Mobile menu toggle
+document.addEventListener('DOMContentLoaded', function(){
+    var toggle = document.querySelector('.menu-toggle');
+    var nav = document.querySelector('.nav-links');
+    if(toggle && nav){
+        toggle.addEventListener('click', function(e){
+            nav.classList.toggle('mobile-open');
+        });
+
+        // Close menu when a link is tapped
+        nav.querySelectorAll('a').forEach(function(a){
+            a.addEventListener('click', function(){ nav.classList.remove('mobile-open'); });
+        });
+    }
+});
+</script>
